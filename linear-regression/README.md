@@ -15,7 +15,7 @@ This project implements a linear regression model from scratch using Python (Num
 ## Setup Instructions
 1. Clone the repository:
    ```bash
-   git clone https://github.com/nishaero/ai-infra-journey/linear-regression.git
+   git clone https://github.com/nishaero/ai-infra-journey.git
    cd ai-infra-journey/linear-regression
    ```
 

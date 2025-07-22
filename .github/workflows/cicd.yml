@@ -33,7 +33,7 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.RUNPOD_SSH_KEY }}" > ~/.ssh/runpod_key
         chmod 600 ~/.ssh/runpod_key
-        ssh-keyscan -p ${{ secrets.RUNPOD_SSH_PORT }} ${{ secrets.RUNPOD_SSH_HOST }} >> ~/.ssh/known_hosts
+        #ssh-keyscan -p ${{ secrets.RUNPOD_SSH_PORT }} ${{ secrets.RUNPOD_SSH_HOST }} >> ~/.ssh/known_hosts
     - name: Copy script to RunPod
       run: |
         scp -i ~/.ssh/runpod_key -P ${{ secrets.RUNPOD_SSH_PORT }} ml-cicd-pipeline/neural_network.py root@${{ secrets.RUNPOD_SSH_HOST }}:/workspace/ai-infra-journey/ml-cicd-pipeline/

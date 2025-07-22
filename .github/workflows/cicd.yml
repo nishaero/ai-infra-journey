@@ -10,11 +10,11 @@ jobs:
   test-local:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: '3.8'
     - name: Install dependencies
       run: |
         pip install torch torchvision mlflow matplotlib psutil pytest
@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-local  # Ensure local tests pass first
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up SSH
       run: |
         mkdir -p ~/.ssh
@@ -53,7 +53,7 @@ jobs:
         scp -i ~/.ssh/runpod_key -P ${{ secrets.RUNPOD_SSH_PORT }} root@${{ secrets.RUNPOD_SSH_HOST }}:/workspace/ai-infra-journey/ml-cicd-pipeline/{loss_plot.png,accuracy_plot.png,sample_predictions.png,runpod_output.log} .
         scp -i ~/.ssh/runpod_key -P ${{ secrets.RUNPOD_SSH_PORT }} -r root@${{ secrets.RUNPOD_SSH_HOST }}:/workspace/ai-infra-journey/ml-cicd-pipeline/mlruns .
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: runpod-results
         path: |
@@ -62,3 +62,4 @@ jobs:
           sample_predictions.png
           runpod_output.log
           mlruns/
+        retention-days: 7

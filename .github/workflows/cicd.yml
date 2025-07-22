@@ -1,0 +1,64 @@
+name: RunPod ML CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-local:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    - name: Install dependencies
+      run: |
+        pip install torch torchvision mlflow matplotlib psutil pytest
+    - name: Run tests
+      run: |
+        cd ml-cicd-pipeline
+        python -m pytest test_neural_network.py
+
+  run-on-runpod:
+    runs-on: ubuntu-latest
+    needs: test-local  # Ensure local tests pass first
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.RUNPOD_SSH_KEY }}" > ~/.ssh/runpod_key
+        chmod 600 ~/.ssh/runpod_key
+        ssh-keyscan -p ${{ secrets.RUNPOD_SSH_PORT }} ${{ secrets.RUNPOD_SSH_HOST }} >> ~/.ssh/known_hosts
+    - name: Copy script to RunPod
+      run: |
+        scp -i ~/.ssh/runpod_key -P ${{ secrets.RUNPOD_SSH_PORT }} ml-cicd-pipeline/neural_network.py root@${{ secrets.RUNPOD_SSH_HOST }}:/workspace/ai-infra-journey/ml-cicd-pipeline/
+    - name: Install dependencies on RunPod
+      run: |
+        ssh -i ~/.ssh/runpod_key -p ${{ secrets.RUNPOD_SSH_PORT }} root@${{ secrets.RUNPOD_SSH_HOST }} << 'EOF'
+          pip install torch torchvision mlflow matplotlib psutil pytest
+        EOF
+    - name: Execute script on RunPod
+      run: |
+        ssh -i ~/.ssh/runpod_key -p ${{ secrets.RUNPOD_SSH_PORT }} root@${{ secrets.RUNPOD_SSH_HOST }} << 'EOF'
+          cd /workspace/ai-infra-journey/ml-cicd-pipeline
+          python neural_network.py > runpod_output.log 2>&1
+        EOF
+    - name: Fetch results and logs
+      run: |
+        scp -i ~/.ssh/runpod_key -P ${{ secrets.RUNPOD_SSH_PORT }} root@${{ secrets.RUNPOD_SSH_HOST }}:/workspace/ai-infra-journey/ml-cicd-pipeline/{loss_plot.png,accuracy_plot.png,sample_predictions.png,runpod_output.log} .
+        scp -i ~/.ssh/runpod_key -P ${{ secrets.RUNPOD_SSH_PORT }} -r root@${{ secrets.RUNPOD_SSH_HOST }}:/workspace/ai-infra-journey/ml-cicd-pipeline/mlruns .
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: runpod-results
+        path: |
+          loss_plot.png
+          accuracy_plot.png
+          sample_predictions.png
+          runpod_output.log
+          mlruns/
